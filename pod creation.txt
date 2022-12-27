@@ -2,7 +2,7 @@
 kind: Pod                              
 apiVersion: v1                    
 metadata:                           
-  name: qspider.pod                  
+  name: qspider-pod                  
 spec:                                    
   containers:                      
     - name: abcd                     
