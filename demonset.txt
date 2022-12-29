@@ -1,0 +1,23 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: demonset-pods
+spec:
+  selector:
+    matchExpressions:
+      - {key: myname, operator: In, values: [qspider, jspider, pyspider]}
+      - {key: env, operator: NotIn, values: [skillrary]}
+  template:
+    metadata:
+      name: demon
+      labels:
+        myname: qspider
+    spec:
+     containers:
+       - name: abcd
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Hello-world; sleep 3 ; done"]
+
+
+
+kubeadm token create --print-join-command    ( to print the token )
