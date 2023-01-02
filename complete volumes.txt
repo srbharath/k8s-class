@@ -1,0 +1,137 @@
+emptydir script
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-emptydir-pod
+spec:
+  containers:
+  - name: one
+    image: centos
+    command: ["/bin/bash", "-c", "echo learning k8s volumes > /tmp/k8s.txt && sleep 3600"]
+    volumeMounts:
+    - name: my-emptydir-vol
+      mountPath: "/bharath"
+  - name: two
+    image: centos
+    command: ["/bin/bash", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: my-emptydir-vol
+      mountPath: "/bharath"
+  volumes:
+  - name: my-emptydir-vol
+    emptyDir: {}
+
+===============================================================
+
+hostpath 
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-hostpath-pod
+spec:
+  volumes:
+  - name: my-hostpath-volume
+    hostPath:
+      path: /vars/k8s
+  containers:
+  - name: abc
+    image: centos
+    command: ["/bin/bash", "-c", "echo learning k8s volumes!!! > /bharath/k8s.txt && sleep 3600"]
+    volumeMounts:
+    - name: my-hostpath-volume
+      mountPath: /bharath
+
+===========================================================================
+
+persistent volume
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs-pv1
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 172.31.40.166
+    path: "/mnt/nfs_share"
+
+----------------------------------------------------
+persistent volume claim
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nfs-pv1
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Mi
+=================================================
+
+deployment file for pv
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+  name: nginx-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      volumes:
+      - name: www
+        persistentVolumeClaim:
+          claimName: pvc-nfs-pv1
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+
+=============================================================
+nfs installation commands
+
+NFS-Server
+=> Launch an ec2-instance Ubuntu and run the following commands to install the NFS-Server
+
+
+- sudo apt update
+- sudo apt install nfs-kernel-server
+- sudo mkdir -p /mnt/nfs_share
+- sudo chown -R nobody:nogroup /mnt/nfs_share/
+- sudo vim /etc/exports
+- insert this content to /etc/exports 
+    /mnt/nfs_share  *(rw,sync,no_subtree_check)
+  if you face any security issues then use below content 
+   /mnt/nfs_share  *(rw,sync,no_subtree_check,insecure)
+- sudo exportfs -a
+- to check exports 
+     sudo exportfs -v or showmount -e 
+- sudo systemctl restart nfs-kernel-server
+
+-----------------------------------------------------------------
+
+commands to install in k8s node
+
+- sudo apt install nfs-common
+- showmount -e nfs-server-ip
